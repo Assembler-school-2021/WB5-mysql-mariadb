@@ -3,27 +3,31 @@
 He creado una bdd con el password root.
 
 > Pregunta 1 : Vaya para este servicio parece un poco justo 151, las conexiones sigueen entrando y esta afectando a producción. Prueba a subir las conexiones máximas a 201 sin editar ningun archivo de configuración ni reiniciar el servicio.
-	Como usuario root de la bdd:
-		set global max_connections=201;
-		Query OK, 0 rows affected (0.001 sec)
-		
-		MariaDB [(none)]> show variables like 'max_connections';
-		+-----------------+-------+
-		| Variable_name   | Value |
-		+-----------------+-------+
-		| max_connections | 201   |
-		+-----------------+-------+
-		1 row in set (0.002 sec)
-	
-> Pregunta 2 : Crea un usuario de mysql separado para el desarrollador usando la metodologia mostrada anteriormente pero solo con permisos de lectura (SELECT). 
 
-Descarga un gestor de base de datos tipo dbeaver, configura una conexión remota usando tunel ssh con el nuevo usuario y comprueba que todo funciona correctamente (haciendo un select y un delete). Deberás crear una tabla e introducir datos con el usuario root antes.
-	Creamos el usuario de sistema developer con la pass developer:
-		useradd -s /bin/false developer
-		passwd developer
+Como usuario root de la bdd:
+```
+set global max_connections=201;
+Query OK, 0 rows affected (0.001 sec)
 		
-		grant SELECT on test.* to 'developer'@'localhost' identified by 'supersecurepassword';
+MariaDB [(none)]> show variables like 'max_connections';
++-----------------+-------+
+| Variable_name   | Value |
++-----------------+-------+
+| max_connections | 201   |
++-----------------+-------+
+1 row in set (0.002 sec)
+```
+
+> Pregunta 2 : Crea un usuario de mysql separado para el desarrollador usando la metodologia mostrada anteriormente pero solo con permisos de lectura (SELECT). 
+> Descarga un gestor de base de datos tipo dbeaver, configura una conexión remota usando tunel ssh con el nuevo usuario y comprueba que todo funciona correctamente (haciendo un select y un delete). Deberás crear una tabla e introducir datos con el usuario root antes.
+
+Creamos el usuario de sistema developer con la pass developer:
+```
+useradd -s /bin/false developer
+passwd developer
 		
+grant SELECT on test.* to 'developer'@'localhost' identified by 'supersecurepassword';
+```		
 		
 > Pregunta 3 : Parece que la persona que instaló el mysql, no apuntó la contraseña de root y se ha perdido. Busca una forma de resetear el pw de root de mysql si no la tubieramos y no pudieramos loguear en el promt con root.
 	
@@ -48,6 +52,12 @@ Y esta en caso de que no podamos acceder:
 Para comprobar que una réplica funciona correctamente nos vamos a fijar sobretodo en Slave_IO_Running y además en los Seconds_Behind_Master que no suban demasiado.
 
 > Pregunta 4 : Inserta varias rows de información en la tabla equipo. Comprueba que replica todo correctamente. Crea otra tabla replica y también inserta varias rows. De nueve vuelve a comprobar que replica correctamente.
+
+`insert into equipo values (4,"kike",5,"negro");`
+![image](https://user-images.githubusercontent.com/65896169/129566592-d3aa7d81-ce3a-4070-9126-7ba78287a9b2.png)
+
+`CREATE TABLE test.replica ( id INT NOT NULL AUTO_INCREMENT, nombre VARCHAR(50), numero INT, color VARCHAR(25), PRIMARY KEY(id));`
+![image](https://user-images.githubusercontent.com/65896169/129567357-459829c1-0e6d-452e-80a8-d4ea9249d25b.png)
 
 > Pregunta 5 : La replicación ahora funciona pero estamos en la nube, hay que securizar las comunicaciones. Configura la replica para usar ssl MASTER_SSL=1.
 

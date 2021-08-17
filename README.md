@@ -61,6 +61,120 @@ Para comprobar que una réplica funciona correctamente nos vamos a fijar sobreto
 
 > Pregunta 5 : La replicación ahora funciona pero estamos en la nube, hay que securizar las comunicaciones. Configura la replica para usar ssl MASTER_SSL=1.
 
+Creamos los certificados, para ello usamos el siguiente script:
+```
+mkdir /etc/mysql/certs && cd /etc/mysql/certs
+
+# Create CA certificate
+echo "CREANDO CERTIFICADO DE CA"
+openssl genrsa 2048 > ca-key.pem
+openssl req -new -x509 -nodes -days 3600 \
+        -key ca-key.pem -out ca.pem
+
+# Create server certificate, remove passphrase, and sign it
+# server-cert.pem = public key, server-key.pem = private key
+echo "CREANDO CERTIFICADO DE SERVIDOR"
+openssl req -newkey rsa:2048 -days 3600 \
+        -nodes -keyout server-key.pem -out server-req.pem
+openssl rsa -in server-key.pem -out server-key.pem
+openssl x509 -req -in server-req.pem -days 3600 \
+        -CA ca.pem -CAkey ca-key.pem -set_serial 01 -out server-cert.pem
+
+# Create client certificate, remove passphrase, and sign it
+# client-cert.pem = public key, client-key.pem = private key
+echo "CREANDO CERTIFICADO DE CLIENTE"
+openssl req -newkey rsa:2048 -days 3600 \
+        -nodes -keyout client-key.pem -out client-req.pem
+openssl rsa -in client-key.pem -out client-key.pem
+openssl x509 -req -in client-req.pem -days 3600 \
+        -CA ca.pem -CAkey ca-key.pem -set_serial 01 -out client-cert.pem
+
+echo "VERIFICANDO CERTIFICADOS"
+openssl verify -CAfile ca.pem server-cert.pem client-cert.pem
+```
+Y modificamos el fichero /etc/mysql/mariadb.conf.d/50-server.cnf para añadir las rutas en el master:
+```
+[mysqld]
+ssl-ca = /etc/mysql/certs/ca.pem
+ssl-cert = /etc/mysql/certs/server-cert.pem
+ssl-key = /etc/mysql/certs/server-key.pem
+```
+Copiamos los certificados generados en el slave en la misma ruta y modificamos /etc/mysql/mariadb.conf.d/50-client.cnf:
+```
+[client]
+ssl-ca=/etc/mysql/certs/ca.pem
+ssl-cert=/etc/mysql/certs/client-cert.pem
+ssl-key=/etc/mysql/certs/client-key.pem
+```
+
+Reiniciamos mysql en master y en el slave hacemos lo siguiente:
+```
+mysql -uroot -p
+STOP SLAVE;
+CHANGE MASTER TO MASTER_SSL=1;
+START SLAVE;
+```
+
+Y verificamos que está correctamente replicando:
+```
+SHOW SLAVE STATUS\G
+*************************** 1. row ***************************
+                Slave_IO_State: Waiting for master to send event
+                   Master_Host: 65.21.49.147
+                   Master_User: replica
+                   Master_Port: 3306
+                 Connect_Retry: 60
+               Master_Log_File: mysql-bin.000011
+           Read_Master_Log_Pos: 342
+                Relay_Log_File: mysql-bin.000006
+                 Relay_Log_Pos: 555
+         Relay_Master_Log_File: mysql-bin.000011
+              Slave_IO_Running: Yes
+             Slave_SQL_Running: Yes
+               Replicate_Do_DB:
+           Replicate_Ignore_DB:
+            Replicate_Do_Table:
+        Replicate_Ignore_Table:
+       Replicate_Wild_Do_Table:
+   Replicate_Wild_Ignore_Table:
+                    Last_Errno: 0
+                    Last_Error:
+                  Skip_Counter: 0
+           Exec_Master_Log_Pos: 342
+               Relay_Log_Space: 1243
+               Until_Condition: None
+                Until_Log_File:
+                 Until_Log_Pos: 0
+            Master_SSL_Allowed: Yes
+            Master_SSL_CA_File:
+            Master_SSL_CA_Path:
+               Master_SSL_Cert:
+             Master_SSL_Cipher:
+                Master_SSL_Key:
+         Seconds_Behind_Master: 0
+ Master_SSL_Verify_Server_Cert: No
+                 Last_IO_Errno: 0
+                 Last_IO_Error:
+                Last_SQL_Errno: 0
+                Last_SQL_Error:
+   Replicate_Ignore_Server_Ids:
+              Master_Server_Id: 1
+                Master_SSL_Crl:
+            Master_SSL_Crlpath:
+                    Using_Gtid: No
+                   Gtid_IO_Pos:
+       Replicate_Do_Domain_Ids:
+   Replicate_Ignore_Domain_Ids:
+                 Parallel_Mode: conservative
+                     SQL_Delay: 0
+           SQL_Remaining_Delay: NULL
+       Slave_SQL_Running_State: Slave has read all relay log; waiting for the slave I/O thread to update it
+              Slave_DDL_Groups: 1
+Slave_Non_Transactional_Groups: 0
+    Slave_Transactional_Groups: 2
+```
+![image](https://user-images.githubusercontent.com/65896169/129724499-badc6537-3a33-45a9-8a20-aecc4b5c5f26.png)
+
 ## Galera
 > Pregunta 6 : Que oción usaremos de configuración para escoger de que nodo va a hacer la sincronización inicial un nodo en concreto?
 > Pregunta 7 : Para el servicio de mysql en el nodo Delta. A continuación configura adecuadamente Omega como nodo que nos va entregar los datos. Borra el contenido de /var/lib/mysql/* y a continuación enciende el servicio de mysql. Comprueba que sincronización proviene de Omega y no afecta al servicio de Bravo. Envía capturas con las evidencias.

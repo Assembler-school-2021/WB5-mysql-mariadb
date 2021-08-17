@@ -176,5 +176,16 @@ Slave_Non_Transactional_Groups: 0
 ![image](https://user-images.githubusercontent.com/65896169/129724499-badc6537-3a33-45a9-8a20-aecc4b5c5f26.png)
 
 ## Galera
+
+Iniciamos los 3 nodos:
+
+![image](https://user-images.githubusercontent.com/65896169/129787276-b0a08854-499c-4609-93b3-1d6c02fc1cd3.png)
+![image](https://user-images.githubusercontent.com/65896169/129788147-99c5233f-94e5-4623-8669-c6e02123c6ce.png)
+
 > Pregunta 6 : Que oción usaremos de configuración para escoger de que nodo va a hacer la sincronización inicial un nodo en concreto?
+
+Cambiamos `wsrep_cluster_address` y ponemos solo la dirección del nodo que queremos.
+
 > Pregunta 7 : Para el servicio de mysql en el nodo Delta. A continuación configura adecuadamente Omega como nodo que nos va entregar los datos. Borra el contenido de /var/lib/mysql/* y a continuación enciende el servicio de mysql. Comprueba que sincronización proviene de Omega y no afecta al servicio de Bravo. Envía capturas con las evidencias.
+
+

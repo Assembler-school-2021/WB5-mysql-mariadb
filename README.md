@@ -184,8 +184,28 @@ Iniciamos los 3 nodos:
 
 > Pregunta 6 : Que oción usaremos de configuración para escoger de que nodo va a hacer la sincronización inicial un nodo en concreto?
 
-Cambiamos `wsrep_cluster_address` y ponemos solo la dirección del nodo que queremos.
+Incluimos la opción `wsrep_sst_donor` y ponemos el orden de preferencia de sincronización que queremos:
+```wsrep_sst_donor="galera-omega,"```
 
 > Pregunta 7 : Para el servicio de mysql en el nodo Delta. A continuación configura adecuadamente Omega como nodo que nos va entregar los datos. Borra el contenido de /var/lib/mysql/* y a continuación enciende el servicio de mysql. Comprueba que sincronización proviene de Omega y no afecta al servicio de Bravo. Envía capturas con las evidencias.
 
+Hemos parado el nodo delta y borrada la información y hemos configurado que sincronice del nodo omega:
+```service mysql stop
+rm -rf /var/lib/mysql/*
+```
 
+Al arrancar de nuevo podemos apreciar como ha elegido el nodo omega para la sincronización:
+
+```
+2021-08-18 10:35:02 0 [Note] WSREP: Member 0.0 (galera-delta) requested state transfer from 'galera-omega,'. Selected 2.0 (galera-omega)(SYNCED) as donor.
+2021-08-18 10:35:02 0 [Note] WSREP: Shifting PRIMARY -> JOINER (TO: 310)
+2021-08-18 10:35:02 1 [Note] WSREP: Requesting state transfer: success, donor: 2
+```
+
+Si lo ejecutamos varias veces vemos que siempre elige omega.
+Si paramos el servicio en omega y volvemos a ejecutar, vemos que intenta sincronizar desde omega, pero al no estar disponible elige a bravo:
+
+```
+2021-08-18 10:46:11 0 [Note] WSREP: Member 1.0 (galera-delta) requested state transfer from 'galera-omega,'. Selected 0.0 (galera-bravo)(SYNCED) as donor.
+2021-08-18 10:46:11 1 [Note] WSREP: Requesting state transfer: success, donor: 0
+```
